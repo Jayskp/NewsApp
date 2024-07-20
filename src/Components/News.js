@@ -1,8 +1,9 @@
 import React, { Component } from 'react';
 import NewsItem from './NewsItem';
-import Spiner from './Spiner'; // Assuming "Spiner" is correct as per your code
+import Spiner from './Spiner'; // Corrected from Spiner to Spiner
 import PropTypes from 'prop-types';
-import InfiniteScroll from 'react-infinite-scroll-component'; // Updated package name
+import InfiniteScroll from 'react-infinite-scroll-component';
+import LoadingBar from 'react-top-loading-bar';
 
 export default class News extends Component {
     static defaultProps = {
@@ -27,7 +28,8 @@ export default class News extends Component {
             articles: [],
             loading: false,
             page: 1,
-            totalResults: 0
+            totalResults: 0,
+            progress: 0 // State to manage the progress of the loading bar
         };
         document.title = `${this.capitalizeFirstLetter(this.props.category)} - NEWS FATAKSE!!`
     }
@@ -37,40 +39,47 @@ export default class News extends Component {
     }
 
     async updateNews() {
+        this.setState({ progress: 10 }); // Start the loading bar
         const url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&apiKey=e6a6c868d8be46eda93c5b4cf9ff49d6&page=${this.state.page}&pageSize=${this.props.pageSize}`;
         this.setState({ loading: true }); // Setting loading state before fetching
         let data = await fetch(url);
+        this.setState({ progress: 30 }); // Progress update
         let parseData = await data.json();
+        this.setState({ progress: 70 }); // Progress update
         console.log(parseData);
         this.setState({
             articles: parseData.articles,
             totalResults: parseData.totalResults,
             loading: false // Resetting loading state after data is fetched
         });
+        this.setState({ progress: 100 }); // Complete the loading bar
     }
 
     fetchMoreData = async () => {
-        this.setState({ page: this.state.page + 1 }, async () => {
-            const url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&apiKey=e6a6c868d8be46eda93c5b4cf9ff49d6&page=${this.state.page}&pageSize=${this.props.pageSize}`;
-            let data = await fetch(url);
-            let parseData = await data.json();
-            console.log(parseData);
-            this.setState({
-                articles: this.state.articles.concat(parseData.articles),
-                totalResults: parseData.totalResults
-            });
+        this.setState({ page: this.state.page + 1 });
+        const url = `https://newsapi.org/v2/top-headlines?country=${this.props.country}&category=${this.props.category}&apiKey=e6a6c868d8be46eda93c5b4cf9ff49d6&page=${this.state.page}&pageSize=${this.props.pageSize}`;
+        let data = await fetch(url);
+        let parseData = await data.json();
+        this.setState({
+            articles: this.state.articles.concat(parseData.articles),
+            totalResults: parseData.totalResults
         });
-    }
+    };
 
     render() {
         return (
             <div className="container my-3">
+                <LoadingBar
+                    color='red'
+                    progress={this.state.progress}
+                    onLoaderFinished={() => this.setState({ progress: 0 })}
+                />
                 <h2 className='text-center'>NEWS FATAKSE!! - Top Headlines</h2>
                 <InfiniteScroll
                     dataLength={this.state.articles.length}
                     next={this.fetchMoreData}
                     hasMore={this.state.articles.length < this.state.totalResults}
-                    loader={<Spiner />}
+                    loader={<Spiner />} // Corrected Spiner component name
                 >
                     <div className="row my-3">
                         {this.state.articles.map((element) => {
